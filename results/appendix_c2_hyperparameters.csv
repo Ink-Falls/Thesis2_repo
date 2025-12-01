@@ -1,0 +1,11 @@
+run_id,recall,f1,best_params
+1,0.9483870967741936,0.8235294117647058,"{'C': 0.01, 'class_weight': None, 'solver': 'liblinear'}"
+2,0.967741935483871,0.847457627118644,"{'C': 0.01, 'class_weight': None, 'solver': 'liblinear'}"
+3,0.9741935483870968,0.8435754189944135,"{'C': 0.01, 'class_weight': None, 'solver': 'liblinear'}"
+4,0.967741935483871,0.8356545961002786,"{'C': 0.01, 'class_weight': None, 'solver': 'liblinear'}"
+5,0.9483870967741936,0.8352272727272727,"{'C': 0.01, 'class_weight': None, 'solver': 'liblinear'}"
+6,0.9935483870967742,0.8461538461538461,"{'C': 0.01, 'class_weight': None, 'solver': 'lbfgs'}"
+7,0.9741935483870968,0.8388888888888889,"{'C': 0.01, 'class_weight': None, 'solver': 'liblinear'}"
+8,0.9548387096774194,0.8338028169014085,"{'C': 0.01, 'class_weight': None, 'solver': 'liblinear'}"
+9,0.9483870967741936,0.8352272727272727,"{'C': 0.01, 'class_weight': None, 'solver': 'liblinear'}"
+10,0.9612903225806452,0.8441926345609065,"{'C': 0.01, 'class_weight': None, 'solver': 'liblinear'}"
