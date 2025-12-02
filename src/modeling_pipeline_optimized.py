@@ -161,7 +161,7 @@ def train_and_evaluate(
         estimator=model,
         param_grid=param_grid,
         scoring="f1",
-        cv=5,  # 3-fold internal CV for speed
+        cv=5,  # 5-fold internal CV
         n_jobs=-1,  # Use all CPU cores
         verbose=0,
     )
