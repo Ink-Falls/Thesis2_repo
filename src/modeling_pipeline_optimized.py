@@ -142,9 +142,22 @@ def prepare_data_for_run(
 
 
 def train_and_evaluate(
-    X_train, y_train, X_test, y_test, model_name, model_class, random_state
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    model_name,
+    model_class,
+    random_state,
+    dataset_name,
+    run_id,
 ):
-    """Trains a model using GridSearchCV and returns metrics."""
+    """
+    Trains a model using GridSearchCV and returns metrics.
+    RETURNS:
+    1. metrics (dict) -> For the main 'Best Run' table.
+    2. search_results (df) -> For the Thesis Appendix (Every hyperparam tried).
+    """
 
     # Initialize base model
     if model_class.__name__ in ["LogisticRegression", "RandomForestClassifier"]:
@@ -169,6 +182,23 @@ def train_and_evaluate(
     # Fit (Tuning happens here)
     grid_search.fit(X_train, y_train)
 
+    # Extract the internal logs of every combination tried
+    cv_results = pd.DataFrame(grid_search.cv_results_)
+
+    # Keep only the relevant columns to save space
+    # We want params, mean_test_score, std_test_score, and rank
+    cols_to_keep = ["mean_test_score", "std_test_score", "rank_test_score"]
+    # Dynamically find columns that start with 'param_'
+    param_cols = [c for c in cv_results.columns if c.startswith("param_")]
+
+    # Filter the dataframe
+    search_log = cv_results[cols_to_keep + param_cols].copy()
+
+    # Tat this log so we know where it came from
+    search_log["dataset"] = dataset_name
+    search_log["model"] = model_name
+    search_log["run_id"] = run_id
+
     # Use best estimator
     best_model = grid_search.best_estimator_
 
@@ -184,7 +214,7 @@ def train_and_evaluate(
         "roc_auc": roc_auc_score(y_test, y_pred_proba),
         "best_params": str(grid_search.best_params_),  # Save params for analysis
     }
-    return metrics
+    return metrics, search_log
 
 
 # 4. MAIN EXECUTION BLOCK
@@ -194,10 +224,13 @@ def run_pipeline():
     """
     The main function to orchestrate the entire experimental pipeline.
     """
-    print("--- Starting Modeling Pipeline (Enhanced with Statistical FE & Tuning) ---")
+    print("--- Starting Modeling Pipeline (Mode: Full Search Extraction) ---")
     start_time = time.time()
 
-    all_results = []
+    all_results = []  # For the Best Models (Table in Results)
+    all_search_logs = []  # For the Appendix Graphs
+
+    Config.NUM_RUNS = 3
 
     # Calculate total iterations
     total_iterations = len(Config.DATASETS) * len(Config.MODELS) * Config.NUM_RUNS
@@ -221,7 +254,7 @@ def run_pipeline():
                         random_state,
                     )
 
-                    metrics = train_and_evaluate(
+                    metrics, search_log = train_and_evaluate(
                         X_train,
                         y_train,
                         X_test,
@@ -229,6 +262,8 @@ def run_pipeline():
                         model_name,
                         model_class,
                         random_state,
+                        dataset_name,
+                        run_id,
                     )
 
                     # Log the results
@@ -240,6 +275,9 @@ def run_pipeline():
                     }
                     all_results.append(run_result)
 
+                    # Log the search history
+                    all_search_logs.append(search_log)
+
                 except Exception as e:
                     print(
                         f"\nERROR during run: {dataset_name}/{model_name}/run_{run_id}"
@@ -250,10 +288,25 @@ def run_pipeline():
 
     progress_bar.close()
 
-    # Save the final results
+    # 1. Save Main Results
     results_df = pd.DataFrame(all_results)
     output_path = os.path.join(Config.RESULTS_DIR, "model_performance_tuned.csv")
     results_df.to_csv(output_path, index=False)
+
+    # 2. Save the "Evidence" (The Search Space)
+    # Concatenate all search logs into one massive file
+    if all_search_logs:
+        search_space_df = pd.concat(all_search_logs, ignore_index=True)
+        # Clean up column names (remove 'param_') prefix for cleaner plotting later)
+        search_space_df.columns = [
+            c.replace("param_", "") for c in search_space_df.columns
+        ]
+
+        evidence_path = os.path.join(
+            Config.RESULTS_DIR, "hyperparameter_search_log.csv"
+        )
+        search_space_df.to_csv(evidence_path, index=False)
+        print(f"Evidence (Search Logs) saved to: {evidence_path}")
 
     end_time = time.time()
     print(f"\n--- Pipeline Finished ---")
